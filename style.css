@@ -22,7 +22,7 @@ body {
 }
 
 .screen.active {
-    display: block; /* Show active screen */
+    /* This class is mainly for semantics now, display is handled by JS for more control */
 }
 
 header {
@@ -50,6 +50,11 @@ button {
 
 button:hover {
     background-color: #0056b3;
+}
+
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
 }
 
 #game-list .game-item {
@@ -119,22 +124,20 @@ button:hover {
 #game-message {
     font-weight: bold;
     color: green;
+    min-height: 1.2em; /* Reserve space to prevent layout jumps */
 }
 
 .modal {
-    position: fixed;
+    position: fixed; /* Full screen overlay */
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0,0,0,0.5);
-    display: none; /* Hidden by default */
+    background-color: rgba(0,0,0,0.5); /* Semi-transparent background */
+    /* display: none; Will be handled by JS */
     justify-content: center;
     align-items: center;
-}
-
-.modal.active {
-    display: flex; /* Show active modal */
+    z-index: 1000; /* Ensure it's on top */
 }
 
 .modal-content {
@@ -143,6 +146,7 @@ button:hover {
     border-radius: 8px;
     text-align: center;
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    min-width: 300px;
 }
 
 .modal-content h2 {
