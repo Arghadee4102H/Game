@@ -25,7 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const quitGameButton = document.getElementById('quit-game-button');
     const gameMessageDisplay = document.getElementById('game-message');
 
-
     // Revive Prompt Elements
     const watchAdReviveButton = document.getElementById('watch-ad-revive-button');
     const skipReviveButton = document.getElementById('skip-revive-button');
@@ -41,9 +40,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const MAX_OVERS_PER_ROUND = 3;
     const MAX_REVIVES_PER_OVER = 2;
     const ROUND_DURATION_SECONDS = 3 * 60; // 3 minutes
+    const AD_DURATION_MS = 1500; // Shorter for testing
 
     // --- Game State ---
-    let currentScreen = 'arcade';
+    let currentScreenId = null; // To track the active screen
     let currentGameId = null;
     let currentRoundScore = 0;
     let oversLeftInRound = 0;
@@ -57,11 +57,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Initialization ---
     function init() {
+        console.log("Initializing Arcade...");
         loadProfile();
         resetDailyPlaysIfNeeded();
         updateArcadeUI();
-        showScreen('arcade');
         setupEventListeners();
+        showScreen('arcade'); // Start with the arcade screen
     }
 
     function setupEventListeners() {
@@ -69,8 +70,9 @@ document.addEventListener('DOMContentLoaded', () => {
         backToArcadeButton.addEventListener('click', () => showScreen('arcade'));
 
         gameListContainer.addEventListener('click', (event) => {
-            if (event.target.classList.contains('play-button')) {
-                const gameItem = event.target.closest('.game-item');
+            const playButton = event.target.closest('.play-button');
+            if (playButton && !playButton.disabled) {
+                const gameItem = playButton.closest('.game-item');
                 const gameId = gameItem.dataset.gameId;
                 attemptStartGame(gameId);
             }
@@ -80,30 +82,32 @@ document.addEventListener('DOMContentLoaded', () => {
         simulateLoseButton.addEventListener('click', () => loseOver("Simulated Loss"));
         quitGameButton.addEventListener('click', () => endRound("quit"));
 
-
         watchAdReviveButton.addEventListener('click', handleRevive);
         skipReviveButton.addEventListener('click', handleSkipRevive);
     }
 
     // --- Navigation ---
-    function showScreen(screenId) {
-        for (const key in screens) {
-            screens[key].classList.remove('active');
-            if (screens[key].classList.contains('modal')) { // ensure modals also hide properly
-                screens[key].style.display = 'none';
+    function showScreen(screenIdToShow) {
+        console.log(`Switching to screen: ${screenIdToShow}`);
+        currentScreenId = screenIdToShow;
+        for (const id in screens) {
+            if (screens[id]) { // Check if element exists
+                const isModal = screens[id].classList.contains('modal');
+                if (id === screenIdToShow) {
+                    screens[id].style.display = isModal ? 'flex' : 'block';
+                    screens[id].classList.add('active'); // Keep for potential CSS styling via .active
+                } else {
+                    screens[id].style.display = 'none';
+                    screens[id].classList.remove('active');
+                }
             }
         }
-        if (screens[screenId].classList.contains('modal')) {
-            screens[screenId].style.display = 'flex'; // modals use flex for centering
-        }
-        screens[screenId].classList.add('active');
-        currentScreen = screenId;
 
-        if (screenId === 'profile') {
+        if (screenIdToShow === 'profile') {
             totalProfileScoreDisplay.textContent = playerProfile.totalScore;
         }
-        if (screenId === 'arcade') {
-            updateArcadeUI();
+        if (screenIdToShow === 'arcade') {
+            updateArcadeUI(); // Refresh arcade UI when returning
         }
     }
 
@@ -113,9 +117,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.game-item').forEach(item => {
             const gameId = item.dataset.gameId;
             const roundsPlayedToday = playerProfile.dailyPlays[today]?.[gameId] || 0;
-            item.querySelector('.rounds-left').textContent = MAX_ROUNDS_PER_DAY - roundsPlayedToday;
+            const roundsLeft = MAX_ROUNDS_PER_DAY - roundsPlayedToday;
+            item.querySelector('.rounds-left').textContent = roundsLeft;
+
             const playButton = item.querySelector('.play-button');
-            if (roundsPlayedToday >= MAX_ROUNDS_PER_DAY) {
+            if (roundsLeft <= 0) {
                 playButton.disabled = true;
                 playButton.textContent = "No Rounds Left";
             } else {
@@ -135,41 +141,49 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         currentGameId = gameId;
+        console.log(`Attempting to start game: ${gameId}. Showing pre-game ad.`);
         showAd(() => { // Callback after ad finishes
+            console.log("Pre-game ad finished. Starting game.");
             startGame();
         });
     }
 
     // --- Ad Simulation ---
     function showAd(callback) {
+        console.log("Showing ad simulation screen.");
         showScreen('adSimulation');
-        // Simulate ad duration
         setTimeout(() => {
+            console.log("Ad simulation finished.");
             if (callback) callback();
-        }, 2000); // Simulate 2 second ad
+        }, AD_DURATION_MS);
     }
 
     // --- Game Flow ---
     function startGame() {
+        console.log(`Starting game: ${currentGameId}`);
         currentRoundScore = 0;
         oversLeftInRound = MAX_OVERS_PER_ROUND;
         gameTitleDisplay.textContent = GAME_CONFIGS[currentGameId].name;
         gameInstructionsDisplay.textContent = GAME_CONFIGS[currentGameId].instructions;
-        gameMessageDisplay.textContent = "";
-        startNewOver();
+        gameMessageDisplay.textContent = ""; // Clear any previous messages
+        
+        startNewOver(); // This will set up the first over
         startRoundTimer();
-        updateGameStatsUI();
+        updateGameStatsUI(); // Initial UI update for game stats
         showScreen('gamePlay');
     }
 
     function startNewOver() {
+        console.log(`Starting new over. Overs left: ${oversLeftInRound}`);
         revivesUsedThisOver = 0;
         // Reset any per-over game state here (e.g., player position in a real game)
-        updateGameStatsUI();
-        gameMessageDisplay.textContent = `Starting Over ${MAX_OVERS_PER_ROUND - oversLeftInRound + 1}!`;
-        // Enable game action button if it was disabled
+        gameMessageDisplay.textContent = `Starting Over ${MAX_OVERS_PER_ROUND - oversLeftInRound + 1} of ${MAX_OVERS_PER_ROUND}!`;
+        
+        // Ensure game action buttons are enabled
         gameActionButton.disabled = false;
         simulateLoseButton.disabled = false;
+        
+        updateGameStatsUI(); // Update UI with new over stats
     }
 
     function handleGameAction() {
@@ -181,32 +195,38 @@ document.addEventListener('DOMContentLoaded', () => {
         
         currentRoundScore += pointsEarned;
         gameMessageDisplay.textContent = `+${pointsEarned} points!`;
+        console.log(`Game action: +${pointsEarned}. Current round score: ${currentRoundScore}`);
         updateGameStatsUI();
 
         // In a real game, you'd check for win/lose conditions here constantly
     }
 
     function loseOver(reason) {
+        console.log(`Over lost: ${reason}. Revives used this over: ${revivesUsedThisOver}/${MAX_REVIVES_PER_OVER}`);
         gameActionButton.disabled = true; // Disable actions while deciding on revive
         simulateLoseButton.disabled = true;
         gameMessageDisplay.textContent = `Over Lost: ${reason}!`;
-        console.log("Over lost. Revives used this over:", revivesUsedThisOver);
+        
         if (revivesUsedThisOver < MAX_REVIVES_PER_OVER) {
             promptRevive();
         } else {
+            console.log("No revives left for this over or player chose not to revive.");
             endOver();
         }
     }
 
     function promptRevive() {
+        console.log("Prompting for revive.");
         revivePromptCountDisplay.textContent = MAX_REVIVES_PER_OVER - revivesUsedThisOver;
         showScreen('revivePrompt');
     }
 
     function handleRevive() {
+        console.log("Player chose to watch ad for revive.");
         showAd(() => {
             revivesUsedThisOver++;
-            gameMessageDisplay.textContent = "Revived!";
+            console.log(`Revive successful. Revives used this over: ${revivesUsedThisOver}`);
+            gameMessageDisplay.textContent = "Revived! Continue playing.";
             // In a real game: Reset player to a safe state, continue the over
             gameActionButton.disabled = false;
             simulateLoseButton.disabled = false;
@@ -216,13 +236,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleSkipRevive() {
+        console.log("Player skipped revive.");
         endOver();
     }
 
     function endOver() {
         oversLeftInRound--;
+        console.log(`Over ended. Overs remaining: ${oversLeftInRound}`);
         updateGameStatsUI();
         if (oversLeftInRound <= 0) {
+            console.log("All overs used up for this round.");
             endRound("overs_used");
         } else {
             // Start the next over
@@ -232,6 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function endRound(reason) {
+        console.log(`Ending round. Reason: ${reason}. Final round score: ${currentRoundScore}`);
         stopRoundTimer();
         playerProfile.totalScore += currentRoundScore;
 
@@ -243,19 +267,22 @@ document.addEventListener('DOMContentLoaded', () => {
             playerProfile.dailyPlays[today][currentGameId] = 0;
         }
         playerProfile.dailyPlays[today][currentGameId]++;
+        console.log(`Plays for ${currentGameId} today: ${playerProfile.dailyPlays[today][currentGameId]}`);
 
         saveProfile();
 
-        let endMessage = `Round Over! Score: ${currentRoundScore}. `;
+        let endMessage = `Round Over! Your score for this round: ${currentRoundScore}. `;
         if (reason === "overs_used") endMessage += "All overs used.";
         if (reason === "time_up") endMessage += "Time ran out.";
-        if (reason === "quit") endMessage += "Round quit.";
+        if (reason === "quit") endMessage += "Round quit by player.";
         
         alert(endMessage + `\nTotal Profile Score: ${playerProfile.totalScore}`);
         
         currentGameId = null;
-        currentRoundScore = 0;
-        updateArcadeUI();
+        currentRoundScore = 0; // Reset for next potential game
+        // Other states like oversLeftInRound, revivesUsedThisOver will be reset by startGame/startNewOver
+        
+        updateArcadeUI(); // Refresh arcade screen counts
         showScreen('arcade');
     }
 
@@ -275,36 +302,59 @@ document.addEventListener('DOMContentLoaded', () => {
         updateGameStatsUI(); // Initial display
         if (roundTimerId) clearInterval(roundTimerId); // Clear existing timer
 
+        console.log("Round timer started.");
         roundTimerId = setInterval(() => {
             timeLeftInRound--;
             updateGameStatsUI();
             if (timeLeftInRound <= 0) {
+                console.log("Round time up.");
                 endRound("time_up");
             }
         }, 1000);
     }
 
     function stopRoundTimer() {
-        clearInterval(roundTimerId);
-        roundTimerId = null;
+        if (roundTimerId) {
+            clearInterval(roundTimerId);
+            roundTimerId = null;
+            console.log("Round timer stopped.");
+        }
     }
 
     // --- Profile & Data ---
     function loadProfile() {
         const storedProfile = localStorage.getItem('miniGameArcadeProfile');
         if (storedProfile) {
-            playerProfile = JSON.parse(storedProfile);
+            try {
+                playerProfile = JSON.parse(storedProfile);
+                console.log("Profile loaded from localStorage:", playerProfile);
+            } catch (e) {
+                console.error("Error parsing profile from localStorage:", e);
+                // Initialize with default if parsing fails
+                playerProfile = { totalScore: 0, dailyPlays: {} };
+            }
+        } else {
+            console.log("No profile found in localStorage, using default.");
+        }
+        // Ensure dailyPlays object exists
+        if (!playerProfile.dailyPlays) {
+            playerProfile.dailyPlays = {};
         }
     }
 
     function saveProfile() {
-        localStorage.setItem('miniGameArcadeProfile', JSON.stringify(playerProfile));
+        try {
+            localStorage.setItem('miniGameArcadeProfile', JSON.stringify(playerProfile));
+            console.log("Profile saved to localStorage:", playerProfile);
+        } catch (e) {
+            console.error("Error saving profile to localStorage:", e);
+        }
     }
 
     function getTodayDateString() {
         const today = new Date();
         const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+        const month = String(today.getMonth() + 1).padStart(2, '0');
         const day = String(today.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
     }
@@ -312,14 +362,21 @@ document.addEventListener('DOMContentLoaded', () => {
     function resetDailyPlaysIfNeeded() {
         const today = getTodayDateString();
         if (!playerProfile.dailyPlays[today]) {
-            // It's a new day or first time playing
-            playerProfile.dailyPlays = {}; // Clear out old dates
-            playerProfile.dailyPlays[today] = {}; // Initialize today's plays
+            console.log(`New day (${today}) or first play. Resetting daily play counts.`);
+            playerProfile.dailyPlays = {}; // Clears all past daily play data
+            playerProfile.dailyPlays[today] = {};
+            // Initialize counts for all known games to 0 for the new day
             Object.keys(GAME_CONFIGS).forEach(gameId => {
                 playerProfile.dailyPlays[today][gameId] = 0;
             });
-            saveProfile();
-            console.log("Daily plays reset for new day:", today);
+            saveProfile(); // Save the reset structure
+        } else {
+            // Ensure all games configured have an entry for today, even if 0
+             Object.keys(GAME_CONFIGS).forEach(gameId => {
+                if (playerProfile.dailyPlays[today][gameId] === undefined) {
+                    playerProfile.dailyPlays[today][gameId] = 0;
+                }
+            });
         }
     }
 
