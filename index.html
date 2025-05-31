@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini Game Arcade</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Main Arcade Screen -->
+    <div id="arcade-screen" class="screen active">
+        <header>
+            <h1>Game Arcade</h1>
+            <button id="profile-button">My Profile</button>
+        </header>
+        <div id="game-list">
+            <!-- Game 1: Flappy Bird -->
+            <div class="game-item" data-game-id="flappy-bird">
+                <div class="game-icon">[Flappy Bird Icon]</div>
+                <div class="game-details">
+                    <h3>Flappy Bird - Blazing Skies</h3>
+                    <p>Tap to flap through fiery pipes and survive the blazing skies!</p>
+                    <p>Rounds left today: <span class="rounds-left">6</span>/6</p>
+                </div>
+                <button class="play-button">Play</button>
+            </div>
+
+            <!-- Game 2: Cosmic Collector -->
+            <div class="game-item" data-game-id="cosmic-collector">
+                <div class="game-icon">[Cosmic Collector Icon]</div>
+                <div class="game-details">
+                    <h3>Cosmic Collector</h3>
+                    <p>Fly your ship, collect energy orbs, and avoid asteroids!</p>
+                    <p>Rounds left today: <span class="rounds-left">6</span>/6</p>
+                </div>
+                <button class="play-button">Play</button>
+            </div>
+
+            <!-- Game 3: Blast Flight -->
+            <div class="game-item" data-game-id="blast-flight">
+                <div class="game-icon">[Blast Flight Icon]</div>
+                <div class="game-details">
+                    <h3>Blast Flight</h3>
+                    <p>Boost, flap, and blast your way through a battlefield in the sky!</p>
+                    <p>Rounds left today: <span class="rounds-left">6</span>/6</p>
+                </div>
+                <button class="play-button">Play</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Play Screen -->
+    <div id="game-play-screen" class="screen">
+        <header>
+            <h2 id="game-title-display">Game Title</h2>
+            <button id="quit-game-button">Quit Round</button>
+        </header>
+        <div id="game-stats">
+            <p>Score: <span id="current-score">0</span></p>
+            <p>Overs Left: <span id="overs-left">3</span></p>
+            <p>Revives This Over: <span id="revives-used-this-over">0</span>/2</p>
+            <p>Round Time: <span id="round-time-left">03:00</span></p>
+        </div>
+        <div id="game-area">
+            <!-- Actual game content would go here -->
+            <p id="game-instructions">Game specific instructions will appear here.</p>
+            <button id="game-action-button">Perform Action (e.g., Flap/Collect/Boost)</button>
+            <button id="simulate-lose-button">Simulate Lose Over</button>
+        </div>
+        <p id="game-message"></p>
+    </div>
+
+    <!-- Ad Simulation Screen -->
+    <div id="ad-simulation-screen" class="screen modal">
+        <div class="modal-content">
+            <h2>Showing Ad...</h2>
+            <p>Please wait while the ad plays.</p>
+            <p>(This will disappear automatically)</p>
+        </div>
+    </div>
+
+    <!-- Revive Prompt Screen -->
+    <div id="revive-prompt-screen" class="screen modal">
+        <div class="modal-content">
+            <h2>You Lost this Over!</h2>
+            <p>Watch an Ad to Revive and continue?</p>
+            <p>(Revives remaining for this over: <span id="revive-prompt-count">2</span>)</p>
+            <button id="watch-ad-revive-button">Watch Ad & Revive</button>
+            <button id="skip-revive-button">No Thanks</button>
+        </div>
+    </div>
+
+    <!-- Profile Screen -->
+    <div id="profile-screen" class="screen">
+        <header>
+            <h1>Your Profile</h1>
+            <button id="back-to-arcade-button">Back to Arcade</button>
+        </header>
+        <div class="profile-content">
+            <p>Total Score from all games:</p>
+            <h2 id="total-profile-score">0</h2>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
